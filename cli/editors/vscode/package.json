@@ -1,0 +1,520 @@
+{
+  "name": "rex-presence",
+  "displayName": "Report Rex Presence & Sync",
+  "description": "Real-time sync, conflict resolution, team presence, and report building for report-rex, backed by rex-svr.",
+  "version": "0.3.1",
+  "publisher": "report-rex",
+  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shriyanss/report-rex"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "workspaceContains:**/report-rex.yaml",
+    "workspaceContains:**/index.md"
+  ],
+  "main": "./out/src/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Report Rex",
+      "properties": {
+        "report-rex.host": {
+          "type": "string",
+          "default": "",
+          "description": "rex-svr host to connect to."
+        },
+        "report-rex.admin.enabled": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "**Enable Admin**: show admin features (Revert Report to This Change, Delete for Everyone). They also need rex-svr's admin password, which is asked for and checked against the server once per session."
+        },
+        "report-rex.blame.inline": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show who last changed the cursor's line (from rex-svr's git history) at the end of the line, once the cursor has rested there for 5 seconds."
+        },
+        "report-rex.port": {
+          "type": "integer",
+          "default": 9443,
+          "description": "rex-svr port."
+        },
+        "report-rex.username": {
+          "type": "string",
+          "default": "",
+          "description": "Username to authenticate as (must match the account you also `rex sync` as)."
+        },
+        "report-rex.dir": {
+          "type": "string",
+          "default": "",
+          "description": "Workspace directory to sync/scope activation to. Defaults to the first workspace folder."
+        },
+        "report-rex.bin": {
+          "type": "string",
+          "default": "rex",
+          "description": "Path to the rex binary, if it isn't on $PATH."
+        },
+        "report-rex.verbose": {
+          "type": "boolean",
+          "default": false,
+          "description": "Deprecated: rex output always goes to the Report Rex output channel now (Report Rex: Show Log)."
+        },
+        "report-rex.caCert": {
+          "type": "string",
+          "default": "",
+          "description": "Path to rex-svr's self-signed certificate (printed by rex-svr on startup), to trust it. Ignored if report-rex.insecure is set."
+        },
+        "report-rex.insecure": {
+          "type": "boolean",
+          "default": false,
+          "description": "Skip TLS certificate verification (use only on a trusted network, as an alternative to report-rex.caCert)."
+        },
+        "report-rex.sync.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Run `rex sync` in the background for this workspace. Off by default -- use Start Sync in the Report Rex view, which tests the connection first."
+        },
+        "report-rex.lint.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Run `rex report validate` on save and surface issues as Problems/diagnostics."
+        },
+        "report-rex.projectOverride": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "on",
+            "off"
+          ],
+          "default": "auto",
+          "description": "Whether this workspace is a rex report project. 'auto' detects via index.md; 'on'/'off' force linting on or off regardless of detection."
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "report-rex.startSync",
+        "title": "Start Sync",
+        "category": "Report Rex",
+        "icon": "$(play)"
+      },
+      {
+        "command": "report-rex.stopSync",
+        "title": "Stop Sync",
+        "category": "Report Rex",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "report-rex.toggleSync",
+        "title": "Toggle Sync",
+        "category": "Report Rex"
+      },
+      {
+        "command": "report-rex.syncNow",
+        "title": "Sync Now",
+        "category": "Report Rex",
+        "icon": "$(sync)"
+      },
+      {
+        "command": "report-rex.testConnection",
+        "title": "Test Connection",
+        "category": "Report Rex",
+        "icon": "$(plug)"
+      },
+      {
+        "command": "report-rex.refresh",
+        "title": "Refresh",
+        "category": "Report Rex",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "report-rex.showLog",
+        "title": "Show Log",
+        "category": "Report Rex",
+        "icon": "$(output)"
+      },
+      {
+        "command": "report-rex.setPassword",
+        "title": "Set Password",
+        "category": "Report Rex"
+      },
+      {
+        "command": "report-rex.setHost",
+        "title": "Set Host",
+        "category": "Report Rex"
+      },
+      {
+        "command": "report-rex.setPort",
+        "title": "Set Port",
+        "category": "Report Rex"
+      },
+      {
+        "command": "report-rex.setUsername",
+        "title": "Set Username",
+        "category": "Report Rex"
+      },
+      {
+        "command": "report-rex.setDir",
+        "title": "Set Directory",
+        "category": "Report Rex"
+      },
+      {
+        "command": "report-rex.configureTls",
+        "title": "Configure TLS Trust",
+        "category": "Report Rex"
+      },
+      {
+        "command": "report-rex.toggleLint",
+        "title": "Toggle Linter",
+        "category": "Report Rex"
+      },
+      {
+        "command": "report-rex.setProjectOverride",
+        "title": "Set Rex Project Override",
+        "category": "Report Rex"
+      },
+      {
+        "command": "report-rex.conflict.resolve",
+        "title": "Resolve Conflict\u2026",
+        "category": "Report Rex",
+        "icon": "$(check)"
+      },
+      {
+        "command": "report-rex.blame",
+        "title": "Rex Blame",
+        "category": "Report Rex",
+        "icon": "$(person)"
+      },
+      {
+        "command": "report-rex.deleteFiles",
+        "title": "Report Rex: Delete for Everyone\u2026",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "report-rex.revertToChange",
+        "title": "Revert Report to This Change\u2026",
+        "category": "Report Rex",
+        "icon": "$(history)"
+      },
+      {
+        "command": "report-rex.conflict.compare",
+        "title": "Compare With Server",
+        "category": "Report Rex",
+        "icon": "$(diff)"
+      },
+      {
+        "command": "report-rex.conflict.keepMine",
+        "title": "Keep Mine",
+        "category": "Report Rex",
+        "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "report-rex.conflict.takeServer",
+        "title": "Take Server's",
+        "category": "Report Rex",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "report-rex.conflict.merge",
+        "title": "Merge in Editor",
+        "category": "Report Rex",
+        "icon": "$(git-merge)"
+      },
+      {
+        "command": "report-rex.conflict.keepBoth",
+        "title": "Keep Both",
+        "category": "Report Rex",
+        "icon": "$(files)"
+      },
+      {
+        "command": "report-rex.conflict.finishMerge",
+        "title": "Submit Merge",
+        "category": "Report Rex",
+        "icon": "$(pass)"
+      },
+      {
+        "command": "report-rex.initReport",
+        "title": "Initialize Report",
+        "category": "Report Rex",
+        "icon": "$(new-file)"
+      },
+      {
+        "command": "report-rex.buildDraft",
+        "title": "Build Report (Draft)",
+        "category": "Report Rex",
+        "icon": "$(file-pdf)"
+      },
+      {
+        "command": "report-rex.buildFinal",
+        "title": "Build Report (Final)",
+        "category": "Report Rex"
+      },
+      {
+        "command": "report-rex.addFinding",
+        "title": "Add Finding",
+        "category": "Report Rex"
+      },
+      {
+        "command": "report-rex.addAppendix",
+        "title": "Add Appendix",
+        "category": "Report Rex"
+      },
+      {
+        "command": "report-rex.addNarrative",
+        "title": "Add Narrative Section",
+        "category": "Report Rex"
+      }
+    ],
+    "views": {
+      "report-rex": [
+        {
+          "id": "reportRex.report",
+          "name": "Report"
+        },
+        {
+          "id": "reportRex.sync",
+          "name": "Sync & Server"
+        },
+        {
+          "id": "reportRex.conflicts",
+          "name": "Conflicts"
+        },
+        {
+          "id": "reportRex.changes",
+          "name": "Recent Changes"
+        },
+        {
+          "id": "reportRex.team",
+          "name": "Team"
+        },
+        {
+          "id": "reportRex.handoffs",
+          "name": "Handoffs",
+          "visibility": "collapsed"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "report-rex",
+          "title": "Report Rex",
+          "icon": "media/rex.svg"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "reportRex.report",
+        "contents": "No report in this folder yet.\n[Initialize Report](command:report-rex.initReport)\nScaffolds a full report or quick-comm here with `rex report init`."
+      },
+      {
+        "view": "reportRex.sync",
+        "contents": "Connect this workspace to your team's rex-svr to sync files, see who's editing what, and resolve conflicts.\n[Set Host](command:report-rex.setHost)\n[Set Username](command:report-rex.setUsername)\n[Set Password](command:report-rex.setPassword)\n[Configure TLS Trust](command:report-rex.configureTls)\nThen [Test Connection](command:report-rex.testConnection) and [Start Sync](command:report-rex.startSync). Settings stay in this workspace's .vscode/, which is never synced."
+      },
+      {
+        "view": "reportRex.conflicts",
+        "contents": "No open conflicts.\nEdits to different lines of the same file merge automatically; only overlapping edits land here."
+      },
+      {
+        "view": "reportRex.changes",
+        "contents": "No changes on the server yet.",
+        "when": "reportRex.configured"
+      },
+      {
+        "view": "reportRex.changes",
+        "contents": "Connect to a rex-svr to see your team's changes.",
+        "when": "!reportRex.configured"
+      },
+      {
+        "view": "reportRex.team",
+        "contents": "Nobody else has a file open right now."
+      },
+      {
+        "view": "reportRex.handoffs",
+        "contents": "No open handoffs for or from you. See `rex handoffs` to hand work to a teammate."
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "report-rex.blame",
+          "when": "reportRex.configured && !explorerResourceIsFolder",
+          "group": "7_modification@8"
+        },
+        {
+          "command": "report-rex.deleteFiles",
+          "when": "reportRex.configured && reportRex.admin",
+          "group": "7_modification@9"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "report-rex.startSync",
+          "when": "view == reportRex.sync && reportRex.configured && !reportRex.syncRunning",
+          "group": "navigation@1"
+        },
+        {
+          "command": "report-rex.stopSync",
+          "when": "view == reportRex.sync && reportRex.syncRunning",
+          "group": "navigation@1"
+        },
+        {
+          "command": "report-rex.syncNow",
+          "when": "view == reportRex.sync && reportRex.syncRunning",
+          "group": "navigation@2"
+        },
+        {
+          "command": "report-rex.testConnection",
+          "when": "view == reportRex.sync",
+          "group": "navigation@3"
+        },
+        {
+          "command": "report-rex.showLog",
+          "when": "view == reportRex.sync",
+          "group": "navigation@4"
+        },
+        {
+          "command": "report-rex.buildDraft",
+          "when": "view == reportRex.report",
+          "group": "navigation@1"
+        },
+        {
+          "command": "report-rex.buildFinal",
+          "when": "view == reportRex.report",
+          "group": "report@2"
+        },
+        {
+          "command": "report-rex.addFinding",
+          "when": "view == reportRex.report",
+          "group": "report@3"
+        },
+        {
+          "command": "report-rex.addAppendix",
+          "when": "view == reportRex.report",
+          "group": "report@4"
+        },
+        {
+          "command": "report-rex.addNarrative",
+          "when": "view == reportRex.report",
+          "group": "report@5"
+        },
+        {
+          "command": "report-rex.refresh",
+          "when": "view == reportRex.conflicts || view == reportRex.changes || view == reportRex.handoffs",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "report-rex.conflict.compare",
+          "when": "view == reportRex.conflicts && viewItem =~ /^conflict\\./",
+          "group": "inline@1"
+        },
+        {
+          "command": "report-rex.conflict.keepMine",
+          "when": "view == reportRex.conflicts && viewItem == conflict.mine",
+          "group": "inline@2"
+        },
+        {
+          "command": "report-rex.conflict.takeServer",
+          "when": "view == reportRex.conflicts && viewItem == conflict.mine",
+          "group": "inline@3"
+        },
+        {
+          "command": "report-rex.conflict.merge",
+          "when": "view == reportRex.conflicts && viewItem == conflict.mine",
+          "group": "inline@4"
+        },
+        {
+          "command": "report-rex.conflict.keepBoth",
+          "when": "view == reportRex.conflicts && viewItem == conflict.mine",
+          "group": "inline@5"
+        },
+        {
+          "command": "report-rex.conflict.finishMerge",
+          "when": "view == reportRex.conflicts && viewItem == conflict.pending",
+          "group": "inline@2"
+        },
+        {
+          "command": "report-rex.conflict.takeServer",
+          "when": "view == reportRex.conflicts && viewItem == conflict.pending",
+          "group": "inline@3"
+        },
+        {
+          "command": "report-rex.conflict.resolve",
+          "when": "view == reportRex.conflicts && viewItem =~ /^conflict\\.(mine|pending)$/",
+          "group": "1_resolve"
+        },
+        {
+          "command": "report-rex.revertToChange",
+          "when": "view == reportRex.changes && viewItem == change && reportRex.admin",
+          "group": "2_revert"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "report-rex.conflict.finishMerge",
+          "when": "reportRex.configured && resourceScheme == file && editorTextFocus && resourceFilename =~ /\\.md$/ && reportRex.hasPendingMerge",
+          "group": "navigation"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "report-rex.deleteFiles",
+          "when": "false"
+        },
+        {
+          "command": "report-rex.revertToChange",
+          "when": "false"
+        },
+        {
+          "command": "report-rex.conflict.keepMine",
+          "when": "false"
+        },
+        {
+          "command": "report-rex.conflict.takeServer",
+          "when": "false"
+        },
+        {
+          "command": "report-rex.conflict.keepBoth",
+          "when": "false"
+        },
+        {
+          "command": "report-rex.conflict.finishMerge",
+          "when": "reportRex.hasPendingMerge"
+        },
+        {
+          "command": "report-rex.stopSync",
+          "when": "reportRex.syncRunning"
+        },
+        {
+          "command": "report-rex.syncNow",
+          "when": "reportRex.configured"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "lint": "tsc --noEmit",
+    "test": "node --test out/test/*.test.js",
+    "test:integration": "node out/test/integration/runTest.js",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^2.32.0",
+    "typescript": "^5.4.0",
+    "@vscode/test-electron": "^2.4.1",
+    "mocha": "^10.7.3",
+    "@types/mocha": "^10.0.8"
+  }
+}

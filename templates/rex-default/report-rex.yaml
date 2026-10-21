@@ -1,0 +1,7 @@
+name: "rex-default"
+display_name: "Report Rex Default"
+version: "0.1.0"
+type: "full-report"
+description: "Professional penetration test report with cover page, TOC, and colored severity boxes"
+engine: "xelatex"
+pandoc_version: ">=3.0"

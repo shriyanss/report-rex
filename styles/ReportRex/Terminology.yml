@@ -1,0 +1,12 @@
+extends: substitution
+message: "Use '%s' instead of '%s'."
+level: warning
+ignorecase: true
+swap:
+  github: GitHub
+  gitlab: GitLab
+  javascript: JavaScript
+  xelatex: XeLaTeX
+  owasp: OWASP
+  docusaurus: Docusaurus
+  latex: LaTeX

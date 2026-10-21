@@ -1,0 +1,9 @@
+# Quick Communication template theme
+
+colors:
+  primary: "1A1A2E"
+  accent:  "0F3460"
+
+# logo:
+#   path: "assets/logo.png"
+#   width: "3cm"

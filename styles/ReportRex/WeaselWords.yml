@@ -1,0 +1,13 @@
+extends: existence
+message: "Consider removing the weasel word '%s'."
+level: warning
+ignorecase: true
+tokens:
+  - very
+  - really
+  - basically
+  - actually
+  - quite
+  - virtually
+  - somewhat
+  - fairly

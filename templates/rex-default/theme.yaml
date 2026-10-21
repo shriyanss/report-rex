@@ -1,0 +1,17 @@
+# Default theme — override any value in your index.md or via --metadata-file
+
+colors:
+  primary:  "1A1A2E"   # dark navy
+  accent:   "0F3460"   # medium blue
+  critical: "B71C1C"   # deep red
+  high:     "E65100"   # deep orange
+  medium:   "F57F17"   # amber
+  low:      "1565C0"   # deep blue
+  info:     "37474F"   # blue grey
+
+# logo:
+#   path: "assets/logo.png"
+#   width: "4cm"
+
+# mainfont: "TeX Gyre Heros"
+# monofont: "Source Code Pro"

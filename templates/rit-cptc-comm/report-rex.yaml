@@ -1,0 +1,7 @@
+name: "rit-cptc-comm"
+display_name: "RIT CPTC — Quick Communication"
+version: "0.1.0"
+type: "communication"
+description: "Lightweight RIT CPTC-branded one/two-pager for mid-engagement progress updates and incident notifications: royal-blue/mint masthead, magenta confidentiality banner, and compact severity panels."
+engine: "xelatex"
+pandoc_version: ">=3.0"

@@ -1,0 +1,314 @@
+%% Report Rex — Default Template
+%% Engine: XeLaTeX
+%% A professional penetration-test report: branded cover, engagement details,
+%% hyperlinked TOC, severity finding panels, charts, and syntax highlighting.
+
+\documentclass[11pt, a4paper]{article}
+
+% ── Core packages ──────────────────────────────────────────────────────────
+\usepackage{geometry}
+\geometry{a4paper, top=2.6cm, bottom=2.4cm, left=2.4cm, right=2.4cm, headheight=1.6cm, headsep=0.6cm, footskip=1.1cm}
+
+\usepackage{fontspec}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{calc}
+\usepackage{parskip}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{microtype}
+\usepackage{amsmath}
+\usepackage{unicode-math}
+\usepackage{tcolorbox}
+\usepackage{fontawesome5}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{tabularray}
+\UseTblrLibrary{booktabs}
+\usepackage{tikz}
+\usepackage{pgf-pie}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.17}
+\usepackage{hyperref}
+
+\tcbuselibrary{breakable, skins}
+
+% ── Fonts ──────────────────────────────────────────────────────────────────
+$if(mainfont)$
+\setmainfont{$mainfont$}
+$else$
+\setmainfont{TeX Gyre Heros}[Scale=0.92]
+$endif$
+$if(monofont)$
+\setmonofont{$monofont$}[Scale=MatchLowercase]
+$else$
+\setmonofont{TeX Gyre Cursor}[Scale=0.85]
+$endif$
+
+% ── Color palette (overridable via theme.yaml / index.md) ───────────────────
+\definecolor{colorPrimary}{HTML}{$if(colors.primary)$$colors.primary$$else$1A1A2E$endif$}
+\definecolor{colorAccent}{HTML}{$if(colors.accent)$$colors.accent$$else$0F3460$endif$}
+\definecolor{colorCritical}{HTML}{$if(colors.critical)$$colors.critical$$else$B71C1C$endif$}
+\definecolor{colorHigh}{HTML}{$if(colors.high)$$colors.high$$else$E65100$endif$}
+\definecolor{colorMedium}{HTML}{$if(colors.medium)$$colors.medium$$else$F9A825$endif$}
+\definecolor{colorLow}{HTML}{$if(colors.low)$$colors.low$$else$1565C0$endif$}
+\definecolor{colorInfo}{HTML}{$if(colors.info)$$colors.info$$else$546E7A$endif$}
+\definecolor{colorInk}{HTML}{222831}
+\definecolor{colorMute}{HTML}{6B7280}
+
+% Categorical palette for OWASP / MITRE / business-risk charts
+\definecolor{chartc1}{HTML}{0F3460}
+\definecolor{chartc2}{HTML}{16697A}
+\definecolor{chartc3}{HTML}{489FB5}
+\definecolor{chartc4}{HTML}{82C0CC}
+\definecolor{chartc5}{HTML}{E9724C}
+\definecolor{chartc6}{HTML}{C05299}
+\definecolor{chartc7}{HTML}{6D597A}
+\definecolor{chartc8}{HTML}{B56576}
+\definecolor{chartc9}{HTML}{937B63}
+\definecolor{chartc10}{HTML}{355070}
+
+% Severity color aliases (used by the lua filter)
+\colorlet{vulncritical}{colorCritical}
+\colorlet{vulnhigh}{colorHigh}
+\colorlet{vulnmedium}{colorMedium}
+\colorlet{vulnlow}{colorLow}
+\colorlet{vulninfo}{colorInfo}
+
+% ── Hyperref (hyperlinked TOC, cross-references, URLs) ──────────────────────
+\hypersetup{
+  colorlinks=true,
+  linkcolor=colorAccent,
+  urlcolor=colorAccent,
+  citecolor=colorAccent,
+  breaklinks=true,
+  pdftitle={$title$},
+  pdfauthor={$for(authors)$$authors.name$$sep$, $endfor$},
+  pdfcreator={$generator$},
+  pdfproducer={$generator$},
+}
+
+% ── Numbering: number down to findings (subsection); TOC to depth 2 ─────────
+\setcounter{secnumdepth}{2}
+\setcounter{tocdepth}{2}
+
+% ── Section title styling ──────────────────────────────────────────────────
+\titleformat{\section}
+  {\color{colorPrimary}\Large\bfseries}
+  {\thesection}{0.7em}{}
+  [\vspace{2pt}{\color{colorAccent}\titlerule[1.2pt]}]
+\titlespacing*{\section}{0pt}{*2.4}{*1.2}
+
+\titleformat{\subsection}
+  {\color{colorPrimary}\large\bfseries}
+  {\thesubsection}{0.6em}{}
+\titlespacing*{\subsection}{0pt}{*2}{*0.8}
+
+% Finding sub-parts (Description/Impact/…): unnumbered, colored run-in heading
+\titleformat{\subsubsection}
+  {\color{colorAccent}\normalsize\bfseries}
+  {}{0pt}{\raisebox{0.5pt}{\color{colorAccent}\rule{3pt}{9pt}}\hspace{6pt}}
+\titlespacing*{\subsubsection}{0pt}{*1.4}{*0.4}
+
+% ── Header / Footer ────────────────────────────────────────────────────────
+% Footer carries the pentest firm (left) and the client (right).
+\newcommand{\rrFirm}{$if(company)$$company$$else$Report Rex$endif$}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{%
+  $if(company_logo)$\raisebox{-0.25\height}{\includegraphics[height=0.8cm]{$company_logo$}}%
+  $else$$if(logo.path)$\raisebox{-0.25\height}{\includegraphics[height=0.8cm]{$logo.path$}}$else$\textbf{\color{colorPrimary}\rrFirm}$endif$$endif$%
+}
+\fancyhead[R]{\small\color{colorMute}$title$\ \textbar\ $if(confidentiality)$$confidentiality$$else$Confidential$endif$}
+\fancyfoot[L]{\small\color{colorMute}\rrFirm}
+\fancyfoot[C]{\small\color{colorMute}Page \thepage}
+\fancyfoot[R]{\small\color{colorMute}$if(client)$$client$$endif$}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{colorAccent!60}\leaders\hrule height \headrulewidth\hfill}}
+
+% ── Figures: keep them where written (no floating), captioned below ─────────
+\captionsetup{font=small, labelfont={bf,color=colorAccent}, skip=6pt}
+\let\origfigure\figure
+\let\endorigfigure\endfigure
+\renewenvironment{figure}[1][H]{\origfigure[H]\centering}{\endorigfigure}
+
+% ── Tables: default booktabs spacing (styled tables come from the lua filter)
+\setlength{\LTpost}{0pt}
+\renewcommand{\arraystretch}{1.25}
+\SetTblrInner{rowsep=2.4pt, colsep=6pt}
+
+% ── Vulnerability finding panel ─────────────────────────────────────────────
+\newtcolorbox{vulnbox}[1]{
+  enhanced, breakable, colframe=#1, colback=#1!5!white,
+  arc=2pt, boxrule=1pt, leftrule=4pt,
+  left=10pt, right=10pt, top=8pt, bottom=8pt,
+  before skip=4pt, after skip=12pt,
+}
+% Severity chip: filled colored badge with white text
+\newcommand{\sevchip}[2]{{\colorbox{#1}{\textcolor{white}{\bfseries\strut\,#2\,}}}}
+\newcommand{\metalabel}[1]{{\footnotesize\bfseries\color{colorMute}\MakeUppercase{#1}}}
+
+% ── Code / syntax highlighting (pandoc skylighting macros) ──────────────────
+% Give highlighted code blocks a soft framed background.
+\usepackage{fvextra}
+% breaknonspaceingroup lets breakanywhere split inside highlighted tokens
+% (\NormalTok{...}); without it a long token overflows the margin (#69).
+\fvset{breaklines=true, breakanywhere=true, breaknonspaceingroup=true}
+% Plain/indented code blocks are LaTeX `verbatim`, which never wraps; make
+% them fvextra Verbatim so the \fvset above applies to them too.
+\RecustomVerbatimEnvironment{verbatim}{Verbatim}{}
+\usepackage{framed}
+\definecolor{codebg}{HTML}{F6F8FA}
+\definecolor{codeframe}{HTML}{E1E4E8}
+\providecommand{\passthrough}[1]{#1}
+\setlength{\emergencystretch}{3em} % let lines loosen instead of overflowing (#64)
+$highlighting-macros$
+% Redefine the Shaded environment (used by highlighted code) as a soft panel
+\makeatletter
+\@ifundefined{Shaded}{}{%
+  \renewenvironment{Shaded}{%
+    \begin{tcolorbox}[breakable, colback=codebg, colframe=codeframe,
+      boxrule=0.6pt, arc=2pt, left=8pt, right=8pt, top=6pt, bottom=6pt,
+      before skip=6pt, after skip=8pt, fontupper=\small]%
+  }{\end{tcolorbox}}%
+}
+\makeatother
+
+% ── Draft watermark ─────────────────────────────────────────────────────────
+$if(draft)$
+\usepackage{draftwatermark}
+\SetWatermarkText{DRAFT}
+\SetWatermarkScale{3}
+\SetWatermarkColor[gray]{0.9}
+$endif$
+
+% ── Pandoc required macros ───────────────────────────────────────────────────
+\providecommand{\tightlist}{\setlength{\itemsep}{2pt}\setlength{\parskip}{0pt}}
+\makeatletter
+\newsavebox\pandoc@box
+\newcommand*\pandocbounded[1]{%
+  \sbox\pandoc@box{#1}%
+  \Gscale@div\@tempa{\textheight}{\dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
+  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
+  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi%
+  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\pandoc@box}%
+  \else\usebox{\pandoc@box}\fi%
+}
+\makeatother
+
+% ── Per-report extensibility ─────────────────────────────────────────────────
+% Anything in index.md `header-includes` is injected here, so a single report
+% can add packages/macros without editing the shared template.
+$for(header-includes)$
+$header-includes$
+$endfor$
+
+% ═══════════════════════════════════════════════════════════════════════════
+\begin{document}
+
+% ── Cover Page ───────────────────────────────────────────────────────────────
+\begin{titlepage}
+\thispagestyle{empty}
+\begin{tikzpicture}[remember picture, overlay]
+  % Top brand band
+  \fill[colorPrimary] (current page.north west) rectangle ([yshift=-5.2cm]current page.north east);
+  \fill[colorAccent]  ([yshift=-5.2cm]current page.north west) rectangle ([yshift=-5.35cm]current page.north east);
+  % Bottom band
+  \fill[colorPrimary] (current page.south west) rectangle ([yshift=1.6cm]current page.south east);
+\end{tikzpicture}
+
+% Brand band content
+\vspace*{0.9cm}
+\noindent\begin{minipage}[c]{0.62\linewidth}
+  $if(company_logo_light)$\includegraphics[height=1.5cm]{$company_logo_light$}$else$
+  {\color{white}\Large\bfseries \rrFirm}$endif$
+\end{minipage}\hfill
+\begin{minipage}[c]{0.36\linewidth}\raggedleft
+  {\color{white!85}\footnotesize \rrFirm\\ Offensive Security Services}
+\end{minipage}
+
+\vspace{4.4cm}
+
+\begin{center}
+  {\footnotesize\bfseries\color{colorAccent}\MakeUppercase{$if(engagement_type)$$engagement_type$$else$Penetration Test$endif$}}\\[0.5cm]
+  {\color{colorPrimary}\rule{0.9\linewidth}{1.4pt}}\\[0.5cm]
+  {\Huge\bfseries\color{colorPrimary} $title$}\\[0.35cm]
+  $if(subtitle)${\Large\color{colorMute} $subtitle$}\\[0.35cm]$endif$
+  {\color{colorPrimary}\rule{0.9\linewidth}{1.4pt}}\\[1.4cm]
+
+  {\footnotesize\color{colorMute}PREPARED FOR}\\[0.35cm]
+  $if(client_logo)$\includegraphics[height=1.6cm]{$client_logo$}\\[0.4cm]$endif$
+  {\LARGE\bfseries\color{colorInk} $if(client)$$client$$endif$}\\[1cm]
+
+  {\setlength{\fboxsep}{7pt}\colorbox{colorAccent}{\color{white}\bfseries\;$if(confidentiality)$\MakeUppercase{$confidentiality$}$else$CONFIDENTIAL$endif$\;}}
+\end{center}
+
+\vfill
+
+\noindent\begin{minipage}[b]{0.55\linewidth}
+  {\footnotesize\color{colorMute}
+  $if(report_id)$\textbf{Report ID:}~$report_id$\\$endif$
+  \textbf{Version:}~$if(version)$$version$$else$1.0$endif$\\
+  \textbf{Date:}~$if(date)$$date$$else$\today$endif$}
+\end{minipage}\hfill
+\begin{minipage}[b]{0.42\linewidth}\raggedleft
+  {\color{white!90}\footnotesize Prepared by\\ \textbf{\rrFirm}}
+\end{minipage}
+\vspace{0.6cm}
+\end{titlepage}
+
+% ── Document Control / Engagement Details ────────────────────────────────────
+\section*{Document Control}
+\addcontentsline{toc}{section}{Document Control}
+\vspace{-4pt}
+
+\noindent\begin{tblr}{
+  % X[l]: only X columns stretch to width=\linewidth; a natural-width Q[l]
+  % column squeezed values like RR-2024-0142 onto two lines (#74).
+  colspec={Q[l,wd=3.6cm,font=\bfseries\small\color{colorMute}] X[l]},
+  row{odd}={bg=colorPrimary!4}, rowsep=3pt, stretch=1.1, width=\linewidth,
+}
+Client & $if(client)$$client$$else$—$endif$ \\
+Engagement & $if(engagement_type)$$engagement_type$$else$Penetration Test$endif$ \\
+$if(report_id)$Report ID & $report_id$ \\$endif$
+$if(start_date)$Testing Window & $start_date$$if(end_date)$ – $end_date$$endif$ \\$endif$
+Version & $if(version)$$version$$else$1.0$endif$ \\
+Report Date & $if(date)$$date$$else$\today$endif$ \\
+Classification & $if(confidentiality)$$confidentiality$$else$Confidential$endif$ \\
+Prepared by & \rrFirm \\
+$if(contact_name)$Point of Contact & $contact_name$$if(contact_email)$ \textless{}$contact_email$\textgreater{}$endif$ \\$endif$
+$if(retest_date)$Retest Date & $retest_date$ \\$endif$
+$if(distribution)$Distribution & $for(distribution)$$distribution$$sep$, $endfor$ \\$endif$
+\end{tblr}
+
+$if(authors)$
+\vspace{0.7cm}
+\noindent{\bfseries\color{colorPrimary}Assessment Team}\\[4pt]
+\noindent\begin{tblr}{
+  colspec={Q[l] Q[l]}, row{1}={bg=colorPrimary, fg=white, font=\bfseries},
+  hlines={colorPrimary!15}, width=\linewidth, rowsep=3pt,
+}
+Name & Role \\
+$for(authors)$
+$authors.name$ & $authors.role$ \\
+$endfor$
+\end{tblr}
+$endif$
+
+\clearpage
+
+% ── Table of Contents (hyperlinked) ──────────────────────────────────────────
+{\hypersetup{linkcolor=colorPrimary}
+\renewcommand{\contentsname}{\color{colorPrimary}Contents}
+\tableofcontents}
+\clearpage
+
+% ── Report Body ──────────────────────────────────────────────────────────────
+$body$
+
+\end{document}

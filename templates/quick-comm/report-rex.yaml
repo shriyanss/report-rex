@@ -1,0 +1,7 @@
+name: "quick-comm"
+display_name: "Quick Communication"
+version: "0.1.0"
+type: "communication"
+description: "Lightweight one/two-pager for mid-engagement progress updates and incident notifications"
+engine: "xelatex"
+pandoc_version: ">=3.0"

@@ -1,0 +1,21 @@
+# RIT CPTC theme — override any value in your index.md or via --metadata-file
+#
+# The palette drives the indigo cover band and section headings, the magenta
+# "Confidential" banners, and the severity color coding used across tables and
+# finding panels.
+
+colors:
+  primary:  "26307C"   # indigo — cover band, section headings, table header rows, bottom band
+  accent:   "C71C64"   # magenta — confidentiality banners, rules, links
+  critical: "FF3B5C"   # bright red/pink
+  high:     "F5820E"   # orange
+  medium:   "F4A81D"   # amber
+  low:      "56C4C9"   # teal
+  info:     "8B7DF0"   # purple
+
+# Headings use a rounded geometric sans (Avant-Garde-like); body uses a
+# humanist sans. Both fall back to bundled TeX Gyre families, so no font files
+# are required. Override with any font installed on the build host.
+# mainfont:    "TeX Gyre Heros"
+# headingfont: "TeX Gyre Adventor"
+# monofont:    "TeX Gyre Cursor"

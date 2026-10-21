@@ -1,0 +1,18 @@
+# RIT CPTC — Quick Communication theme
+# Shares the palette with the full `rit-cptc` template so communications and the
+# final report look like one family. Override any value in your index.md.
+
+colors:
+  primary:  "26307C"   # indigo — table headers, bottom band
+  accent:   "C71C64"   # magenta — masthead rule / banner / links
+  cover:    "12539E"   # royal blue — masthead band
+  mint:     "9DE8C0"   # mint green — masthead title
+  critical: "FF3B5C"
+  high:     "F5820E"
+  medium:   "F4A81D"
+  low:      "56C4C9"
+  info:     "8B7DF0"
+
+# mainfont:    "TeX Gyre Heros"
+# headingfont: "TeX Gyre Adventor"   # rounded display face, if installed
+# monofont:    "TeX Gyre Cursor"

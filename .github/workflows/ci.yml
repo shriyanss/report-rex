@@ -1,0 +1,191 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  PYTHON_VERSION: "3.11"
+  NODE_VERSION: "20"
+  VALE_VERSION: "3.17.1"
+  NAABU_VERSION: "2.6.1"
+  NIKTO_VERSION: "2.6.1"
+  # Official SpecterOps/BloodHound-CE sample AD collection data — exercises the
+  # `rex ingest bloodhound` import path (live collection needs real domain creds).
+  BLOODHOUND_SAMPLE_URL: "https://raw.githubusercontent.com/SpecterOps/BloodHound-Docs/main/docs/assets/sample-data/ad_sampledata.zip"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: core/pyproject.toml
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: cli/go.mod
+          cache-dependency-path: cli/go.sum
+      - run: pip install ruff "core/.[dev]"
+      - run: ruff check core/src/
+      - run: python scripts/check_vuln_templates.py
+      - name: vale
+        run: |
+          curl -fsSL "https://github.com/vale-cli/vale/releases/download/v${VALE_VERSION}/vale_${VALE_VERSION}_Linux_64-bit.tar.gz" | tar -xz -C /usr/local/bin vale
+          vale --config .vale.ini --minAlertLevel=warning reporting/ docs/docs/ vuln-templates/
+      - run: bash cli/scripts/prepare-embed.sh
+      - working-directory: cli
+        run: |
+          test -z "$(gofmt -l .)"
+          go vet ./...
+
+  test-python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: core/pyproject.toml
+      - run: pip install "core/.[dev]"
+      - run: pytest core/tests/ -v --cov=report_rex_core --cov-report=term-missing
+
+  test-go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: cli/go.mod
+          cache-dependency-path: cli/go.sum
+      - run: bash cli/scripts/prepare-embed.sh
+      - working-directory: cli
+        run: |
+          go build ./...
+          go test ./... -v -cover
+      # Real rex/rex-svr subprocesses + real git: initial push/pull, conflicts,
+      # restarts, handoffs, and the data-safety regressions (issue #62).
+      - name: e2e sync / handoffs / data-safety
+        working-directory: cli
+        run: go test ./internal/synctest/... -tags e2e -v -timeout 300s
+
+  vscode:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cli/editors/vscode
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: cli/editors/vscode/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+      - run: npm run test
+
+  # Builds the real binary and drives `image build` / `report init` against
+  # the runner's Docker daemon.
+  e2e-cli:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: cli/go.mod
+          cache-dependency-path: cli/go.sum
+      - run: bash cli/scripts/prepare-embed.sh
+      - run: (cd cli && go build -o bin/rex .)
+      - run: ./cli/bin/rex image build
+      # Plain `go build` (no -ldflags) leaves Version at "dev".
+      - run: docker image inspect report-rex:dev
+      - run: ./cli/bin/rex report init --dir e2e-report --type full-report --force
+      - run: test -f e2e-report/index.md
+      # Non-empty target dir must be refused.
+      - run: "! ./cli/bin/rex report init --dir e2e-report --type quick-comm --kind critical-finding --force"
+
+  # Real nmap/naabu/nikto scans of scanme.nmap.org (nmap's public test target)
+  # plus a BloodHound sample import. render-test renders the result.
+  e2e-ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: cli/go.mod
+          cache-dependency-path: cli/go.sum
+      - name: install scanners
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends nmap libpcap-dev libxml-writer-perl
+          curl -fsSL -o /tmp/naabu.zip "https://github.com/projectdiscovery/naabu/releases/download/v${NAABU_VERSION}/naabu_${NAABU_VERSION}_linux_amd64.zip"
+          sudo unzip -o /tmp/naabu.zip naabu -d /usr/local/bin
+          mkdir -p /tmp/nikto
+          curl -fsSL "https://github.com/sullo/nikto/archive/refs/tags/${NIKTO_VERSION}.tar.gz" | tar -xz -C /tmp/nikto --strip-components=1
+          sudo ln -sf /tmp/nikto/program/nikto.pl /usr/local/bin/nikto
+          curl -fsSL -o /tmp/ad_sampledata.zip "$BLOODHOUND_SAMPLE_URL"
+          nmap -V && naabu -version && nikto -Version
+      - run: bash cli/scripts/prepare-embed.sh
+      - run: (cd cli && go build -o bin/rex .)
+      - name: ingest
+        run: |
+          ./cli/bin/rex report init --dir e2e-report --type full-report --force
+          ./cli/bin/rex ingest --dir e2e-report nmap -sV scanme.nmap.org
+          ./cli/bin/rex ingest --dir e2e-report naabu -host scanme.nmap.org -top-ports 100
+          ./cli/bin/rex ingest --dir e2e-report nikto -h http://scanme.nmap.org -maxtime 40s
+          ./cli/bin/rex ingest --dir e2e-report bloodhound /tmp/ad_sampledata.zip
+      - name: assert
+        run: |
+          test -f e2e-report/artifacts/assets.json
+          test -f e2e-report/appendices/assets.md
+          grep -q "appendices/assets.md" e2e-report/index.md
+          grep -q "asset_graph" e2e-report/appendices/assets.md
+          test -f e2e-report/artifacts/webfindings.json
+          test -f e2e-report/appendices/web-findings.md
+          grep -q "appendices/web-findings.md" e2e-report/index.md
+          grep -q "web_graph" e2e-report/appendices/web-findings.md
+          test -f e2e-report/artifacts/bloodhound.json
+          test -f e2e-report/appendices/ad-enum.md
+          grep -q "appendices/ad-enum.md" e2e-report/index.md
+          grep -q "High-Value Principals" e2e-report/appendices/ad-enum.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report
+          path: e2e-report/
+          retention-days: 1
+
+  # Renders every template (and the e2e-ingest report) inside the real runtime
+  # image built from ./Dockerfile.
+  render-test:
+    runs-on: ubuntu-latest
+    needs: e2e-ingest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: e2e-report
+          path: e2e-report
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: report-rex:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - run: docker run --rm --entrypoint bash -v "$PWD:/w" -w /w report-rex:ci scripts/render-all-templates.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ci-output
+          path: ci-output/
+          retention-days: 7

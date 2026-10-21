@@ -1,0 +1,189 @@
+%% Report Rex — RIT CPTC Quick Communication Template
+%% Lightweight one/two-pager for mid-engagement client communications, carrying
+%% the RIT CPTC brand: royal-blue/mint masthead, magenta confidentiality banner,
+%% corner accent, and compact severity panels.
+%% Engine: XeLaTeX
+
+\documentclass[11pt, a4paper]{article}
+
+\usepackage{geometry}
+\geometry{a4paper, top=2cm, bottom=2.6cm, left=2.3cm, right=2.3cm, headheight=1.2cm, footskip=1.3cm}
+
+\usepackage{fontspec}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{fancyhdr}
+\usepackage{parskip}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{calc}
+\usepackage{tcolorbox}
+\usepackage{microtype}
+\usepackage{caption}
+\usepackage{enumitem}
+\usepackage{float}
+\usepackage{tabularray}
+\UseTblrLibrary{booktabs}
+\usepackage{tikz}
+\usepackage{fontawesome5}
+\usepackage{hyperref}
+\tcbuselibrary{skins, breakable}
+
+$if(mainfont)$
+\setmainfont{$mainfont$}
+$else$
+\setmainfont{TeX Gyre Heros}[Scale=0.92]
+$endif$
+$if(monofont)$
+\setmonofont{$monofont$}[Scale=MatchLowercase]
+$else$
+\setmonofont{TeX Gyre Cursor}[Scale=0.85]
+$endif$
+$if(headingfont)$
+\newfontfamily\headingfont{$headingfont$}
+$else$
+\newfontfamily\headingfont{TeX Gyre Heros}[Scale=0.94]
+$endif$
+
+\definecolor{colorPrimary}{HTML}{$if(colors.primary)$$colors.primary$$else$26307C$endif$}
+\definecolor{colorAccent}{HTML}{$if(colors.accent)$$colors.accent$$else$C71C64$endif$}
+\definecolor{colorCover}{HTML}{$if(colors.cover)$$colors.cover$$else$12539E$endif$}
+\definecolor{colorMint}{HTML}{$if(colors.mint)$$colors.mint$$else$9DE8C0$endif$}
+\definecolor{colorCritical}{HTML}{$if(colors.critical)$$colors.critical$$else$FF3B5C$endif$}
+\definecolor{colorHigh}{HTML}{$if(colors.high)$$colors.high$$else$F5820E$endif$}
+\definecolor{colorMedium}{HTML}{$if(colors.medium)$$colors.medium$$else$F4A81D$endif$}
+\definecolor{colorLow}{HTML}{$if(colors.low)$$colors.low$$else$56C4C9$endif$}
+\definecolor{colorInfo}{HTML}{$if(colors.info)$$colors.info$$else$8B7DF0$endif$}
+\definecolor{colorInk}{HTML}{1C2333}
+\definecolor{colorMute}{HTML}{6B7280}
+\definecolor{cornerLight}{HTML}{ECEEF1}
+\definecolor{cornerDark}{HTML}{C9CDD4}
+
+\colorlet{vulncritical}{colorCritical}
+\colorlet{vulnhigh}{colorHigh}
+\colorlet{vulnmedium}{colorMedium}
+\colorlet{vulnlow}{colorLow}
+\colorlet{vulninfo}{colorInfo}
+
+\hypersetup{colorlinks=true, linkcolor=colorAccent, urlcolor=colorAccent, breaklinks=true,
+  pdftitle={$title$}, pdfcreator={$generator$}, pdfproducer={$generator$}}
+
+% Quick communications read better without section numbers.
+\setcounter{secnumdepth}{0}
+
+\newcommand{\rrFirm}{$if(company)$$company$$else$Report Rex$endif$}
+\newcommand{\rrClassification}{$if(confidentiality)$$confidentiality$$else$Confidential$endif$}
+
+% Section headings: indigo, in the display face.
+\usepackage{titlesec}
+\titleformat{\section}{\headingfont\color{colorPrimary}\large\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{*1.6}{*0.6}
+
+% ── Page decorations (corner accent + confidentiality banner) ───────────────
+\newcommand{\rrPageDecor}{%
+\begin{tikzpicture}[remember picture, overlay]
+  \fill[cornerLight] ([xshift=-2.6cm]current page.north east) -- (current page.north east) -- ([yshift=-2.6cm]current page.north east) -- cycle;
+  \fill[cornerDark]  ([xshift=-1.5cm]current page.north east) -- (current page.north east) -- ([yshift=-1.5cm]current page.north east) -- cycle;
+  \fill[colorPrimary] (current page.south west) rectangle ([yshift=0.32cm]current page.south east);
+  \fill[colorAccent] ([xshift=-4.6cm,yshift=0.32cm]current page.south east) -- ([yshift=0.32cm]current page.south east) -- ([yshift=1.35cm]current page.south east) -- ([xshift=-3.4cm,yshift=1.35cm]current page.south east) -- cycle;
+  \fill[colorPrimary!85!black] ([xshift=-1.15cm,yshift=1.35cm]current page.south east) -- ([xshift=-0.05cm,yshift=1.35cm]current page.south east) -- ([xshift=-0.05cm,yshift=0.55cm]current page.south east) -- cycle;
+  \node[anchor=east, text=white, font=\footnotesize\bfseries] at ([xshift=-1.35cm,yshift=0.82cm]current page.south east) {\MakeUppercase{\rrClassification}};
+\end{tikzpicture}%
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[L]{\rrPageDecor}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+\fancypagestyle{plain}{\fancyhf{}\fancyfoot[L]{\rrPageDecor}\renewcommand{\headrulewidth}{0pt}\renewcommand{\footrulewidth}{0pt}}
+
+\providecommand{\tightlist}{\setlength{\itemsep}{2pt}\setlength{\parskip}{0pt}}
+\providecommand{\passthrough}[1]{#1}
+\setlength{\emergencystretch}{3em} % let lines loosen instead of overflowing (#64)
+
+% Figures: no floating
+\captionsetup{font={small,it}, labelformat=empty, skip=5pt}
+\let\origfigure\figure\let\endorigfigure\endfigure
+\renewenvironment{figure}[1][H]{\origfigure[H]\centering}{\endorigfigure}
+
+\SetTblrInner{rowsep=2.4pt, colsep=6pt}
+
+% Compact vulnerability panel (title carried inline — no per-finding heading).
+\newtcolorbox{vulnbox}[1]{
+  enhanced, breakable, colframe=#1, colback=#1!6!white,
+  arc=1pt, boxrule=0pt, leftrule=6pt, toprule=2.2pt,
+  left=10pt, right=10pt, top=8pt, bottom=8pt,
+  before skip=6pt, after skip=8pt,
+}
+\newcommand{\sevchip}[2]{{\setlength{\fboxsep}{3pt}\colorbox{#1}{\textcolor{white}{\bfseries\strut\,#2\,}}}}
+\newcommand{\metalabel}[1]{{\footnotesize\bfseries\color{colorMute}\MakeUppercase{#1}}}
+
+% Code / syntax highlighting
+\usepackage{fvextra}
+% breaknonspaceingroup lets breakanywhere split inside highlighted tokens
+% (\NormalTok{...}); without it a long token overflows the margin (#69).
+\fvset{breaklines=true, breakanywhere=true, breaknonspaceingroup=true}
+% Plain/indented code blocks are LaTeX `verbatim`, which never wraps; make
+% them fvextra Verbatim so the \fvset above applies to them too.
+\RecustomVerbatimEnvironment{verbatim}{Verbatim}{}
+\usepackage{framed}
+\definecolor{codebg}{HTML}{F5F7FA}
+\definecolor{codeframe}{HTML}{DEE3EA}
+$highlighting-macros$
+\makeatletter
+\@ifundefined{Shaded}{}{%
+  \renewenvironment{Shaded}{%
+    \begin{tcolorbox}[breakable, colback=codebg, colframe=codeframe, boxrule=0.6pt,
+      arc=2pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fontupper=\small]%
+  }{\end{tcolorbox}}%
+}
+\makeatother
+
+\makeatletter
+\newsavebox\pandoc@box
+\newcommand*\pandocbounded[1]{%
+  \sbox\pandoc@box{#1}%
+  \Gscale@div\@tempa{\textheight}{\dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
+  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
+  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi%
+  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\pandoc@box}%
+  \else\usebox{\pandoc@box}\fi%
+}
+\makeatother
+
+$for(header-includes)$
+$header-includes$
+$endfor$
+
+% ═══════════════════════════════════════════════════════════════════════════
+\begin{document}
+
+% Masthead: firm logo (left) and client logo (right)
+\noindent\begin{minipage}[c]{0.5\linewidth}
+  $if(company_logo)$\includegraphics[height=1cm]{$company_logo$}$else$\textbf{\headingfont\large\color{colorPrimary}\rrFirm}$endif$
+\end{minipage}\hfill
+\begin{minipage}[c]{0.45\linewidth}\raggedleft
+  $if(client_logo)$\includegraphics[height=1cm]{$client_logo$}$else$\textbf{\color{colorMute}$if(client)$$client$$endif$}$endif$
+\end{minipage}
+
+\vspace{8pt}
+
+% Royal-blue title band with a mint title (echoes the full report's cover)
+\noindent\begin{tcolorbox}[enhanced, colback=colorCover, colframe=colorCover,
+  arc=3pt, boxrule=0pt, left=14pt, right=14pt, top=11pt, bottom=11pt,
+  borderline west={4pt}{0pt}{colorAccent}]
+  {\headingfont\bfseries\color{colorMint}\LARGE $title$\par}
+  \vspace{3pt}
+  {\small\color{white!88}%
+    $if(client)$$client$~\textbullet~$endif$%
+    $if(date)$$date$$else$\today$endif$%
+    $if(confidentiality)$~\textbullet~$confidentiality$$endif$}
+\end{tcolorbox}
+
+\vspace{8pt}
+
+$body$
+
+\end{document}

@@ -1,0 +1,375 @@
+%% Report Rex — RIT CPTC Template
+%% Engine: XeLaTeX
+%% A bold pentest report: indigo brand-band cover, numbered indigo section
+%% headings, magenta confidentiality banners with corner accents, severity
+%% color coding, a findings summary table, and tcolorbox finding panels
+%% (CVSS, Impact / Sophistication, MITRE ATT&CK, Material Impact, Component
+%% with its affected assets).
+
+\documentclass[11pt, a4paper]{article}
+
+% ── Core packages ──────────────────────────────────────────────────────────
+\usepackage{geometry}
+\geometry{a4paper, top=2.0cm, bottom=2.2cm, left=1.9cm, right=1.9cm, headheight=1.2cm, headsep=0.5cm, footskip=1.3cm}
+
+\usepackage{fontspec}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{calc}
+\usepackage{parskip}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{microtype}
+\usepackage{amsmath}
+\usepackage{unicode-math}
+\usepackage{tcolorbox}
+\usepackage{fontawesome5}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{tabularray}
+\UseTblrLibrary{booktabs}
+\usepackage{tikz}
+\usetikzlibrary{calc}
+\usepackage{pgf-pie}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.17}
+\usepackage{etoolbox}
+\usepackage{hyperref}
+
+\tcbuselibrary{breakable, skins}
+
+% ── Fonts ──────────────────────────────────────────────────────────────────
+% Scales land the defaults on whole half-points in PostScript points (bp, the
+% unit Word uses; a TeX pt is 1/72.27in), so the `--docx` clone typesets and
+% wraps the same: body 10bp (0.91667 x 10.95pt), inline code 9.5bp, code
+% blocks 8.5bp (9.8pt x 0.87083), \large headings 11.5bp. Common
+% ligatures (ff, fi) and kerning are off: Word sets neither by default.
+% Line breaking is Word's too: spaces stretch (practically without limit) but
+% never shrink, so every line that fits is equally good and TeX fills each
+% line greedily, as Word does; lines break after a typed '-' (HyphenChar).
+% The faces are Liberation Sans/Mono (SIL OFL, shipped in assets/fonts and
+% embedded in the `--docx` clone), so both outputs draw the very same glyphs.
+% They have no hook arrow, so continuation marks use → (Liberation's).
+$if(mainfont)$
+\setmainfont{$mainfont$}
+$else$
+\setmainfont{Liberation Sans}[Scale=0.91667, WordSpace={1,1000,0}, Ligatures={TeX,NoCommon}, Kerning=Off, HyphenChar=-]
+$endif$
+$if(monofont)$
+\setmonofont{$monofont$}[Scale=MatchLowercase]
+$else$
+\setmonofont{Liberation Mono}[Scale=0.87083, Kerning=Off]
+$endif$
+% Display face for the cover title and section headings. Falls back to
+% Liberation Sans; set `headingfont` in theme.yaml to a rounded
+% geometric face (e.g. "TeX Gyre Adventor", "Poppins") for the source look.
+$if(headingfont)$
+\newfontfamily\headingfont{$headingfont$}
+$else$
+\newfontfamily\headingfont{Liberation Sans}[Scale=0.96193, WordSpace={1,1000,0}, Ligatures={TeX,NoCommon}, Kerning=Off, HyphenChar=-]
+$endif$
+
+% ── Color palette (overridable via theme.yaml / index.md) ───────────────────
+\definecolor{colorPrimary}{HTML}{$if(colors.primary)$$colors.primary$$else$26307C$endif$}
+\definecolor{colorAccent}{HTML}{$if(colors.accent)$$colors.accent$$else$C71C64$endif$}
+\definecolor{colorCritical}{HTML}{$if(colors.critical)$$colors.critical$$else$FF3B5C$endif$}
+\definecolor{colorHigh}{HTML}{$if(colors.high)$$colors.high$$else$F5820E$endif$}
+\definecolor{colorMedium}{HTML}{$if(colors.medium)$$colors.medium$$else$F4A81D$endif$}
+\definecolor{colorLow}{HTML}{$if(colors.low)$$colors.low$$else$56C4C9$endif$}
+\definecolor{colorInfo}{HTML}{$if(colors.info)$$colors.info$$else$8B7DF0$endif$}
+\definecolor{colorInk}{HTML}{1C2333}
+\definecolor{colorMute}{HTML}{6B7280}
+\definecolor{cornerLight}{HTML}{ECEEF1}
+\definecolor{cornerDark}{HTML}{C9CDD4}
+
+% Categorical palette for OWASP / MITRE / business-risk charts
+\definecolor{chartc1}{HTML}{12539E}
+\definecolor{chartc2}{HTML}{2E7CC4}
+\definecolor{chartc3}{HTML}{56C4C9}
+\definecolor{chartc4}{HTML}{9DE8C0}
+\definecolor{chartc5}{HTML}{F5820E}
+\definecolor{chartc6}{HTML}{C71C64}
+\definecolor{chartc7}{HTML}{8B7DF0}
+\definecolor{chartc8}{HTML}{F4A81D}
+\definecolor{chartc9}{HTML}{6D597A}
+\definecolor{chartc10}{HTML}{26307C}
+
+% Severity color aliases (used by the lua filter and charts module)
+\colorlet{vulncritical}{colorCritical}
+\colorlet{vulnhigh}{colorHigh}
+\colorlet{vulnmedium}{colorMedium}
+\colorlet{vulnlow}{colorLow}
+\colorlet{vulninfo}{colorInfo}
+
+% ── Hyperref (hyperlinked TOC, cross-references, URLs) ──────────────────────
+\hypersetup{
+  colorlinks=true,
+  linkcolor=colorAccent,
+  urlcolor=colorAccent,
+  citecolor=colorAccent,
+  breaklinks=true,
+  pdftitle={$title$},
+  pdfauthor={$for(authors)$$authors.name$$sep$, $endfor$},
+  pdfcreator={$generator$},
+  pdfproducer={$generator$},
+}
+
+% ── Numbering / TOC ─────────────────────────────────────────────────────────
+% Number down to findings (subsection, e.g. "3.1"); TOC to depth 2.
+\setcounter{secnumdepth}{2}
+\setcounter{tocdepth}{2}
+
+% ── Section title styling (rounded heading face, indigo) ────────────────────
+\titleformat{\section}
+  {\headingfont\color{colorPrimary}\LARGE\bfseries}
+  {\thesection}{0.5em}{}
+\titlespacing*{\section}{0pt}{*2.2}{*1.0}
+
+\titleformat{\subsection}
+  {\headingfont\color{colorPrimary}\large\bfseries}
+  {\thesubsection}{0.5em}{}
+\titlespacing*{\subsection}{0pt}{*1.8}{*0.7}
+
+% Finding sub-parts (Description / Remediation / …): colored run-in label with
+% a magenta tick, echoing the panel's sidebar labels.
+\titleformat{\subsubsection}
+  {\headingfont\color{colorPrimary}\normalsize\bfseries}
+  {}{0pt}{\raisebox{0.4pt}{\color{colorAccent}\rule{3pt}{10pt}}\hspace{6pt}}
+\titlespacing*{\subsubsection}{0pt}{*1.3}{*0.35}
+
+% ── Page decorations (corner accents + confidentiality banner) ──────────────
+\newcommand{\rrFirm}{$if(company)$$company$$else$Report Rex$endif$}
+\newcommand{\rrClassification}{$if(confidentiality)$$confidentiality$$else$Confidential$endif$}
+
+% Drawn once per page as a zero-size overlay: a folded gray corner top-right and
+% a magenta classification banner with an indigo baseline bottom-right.
+\newcommand{\rrPageDecor}{%
+\begin{tikzpicture}[remember picture, overlay]
+  % Top-right folded corner
+  \fill[cornerLight] ([xshift=-2.9cm]current page.north east) -- (current page.north east) -- ([yshift=-2.9cm]current page.north east) -- cycle;
+  \fill[cornerDark]  ([xshift=-1.7cm]current page.north east) -- (current page.north east) -- ([yshift=-1.7cm]current page.north east) -- cycle;
+  % Bottom classification banner
+  \fill[colorPrimary] (current page.south west) rectangle ([yshift=0.32cm]current page.south east);
+  \fill[colorAccent] ([xshift=-5.6cm,yshift=0.32cm]current page.south east) -- ([yshift=0.32cm]current page.south east) -- ([yshift=1.35cm]current page.south east) -- ([xshift=-4.4cm,yshift=1.35cm]current page.south east) -- cycle;
+  \fill[colorPrimary!85!black] ([xshift=-1.1cm,yshift=1.35cm]current page.south east) -- ([yshift=1.35cm]current page.south east) -- ([yshift=0.55cm]current page.south east) -- cycle;
+  \node[anchor=east, text=white, font=\footnotesize\bfseries] at ([xshift=-1.35cm,yshift=0.82cm]current page.south east) {\MakeUppercase{\rrClassification}\enspace|\enspace\thepage};
+\end{tikzpicture}%
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[L]{\rrPageDecor}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% Plain style (first page of each \section via \clearpage) keeps decorations.
+\fancypagestyle{plain}{%
+  \fancyhf{}%
+  \fancyfoot[L]{\rrPageDecor}%
+  \renewcommand{\headrulewidth}{0pt}%
+  \renewcommand{\footrulewidth}{0pt}%
+}
+
+% ── Lists: label 18bp in, text 36bp in per level — the indents pandoc's DOCX
+% writer hard-codes, so `--docx` output wraps list items the same way.
+\setlist{leftmargin=36bp, labelindent=18bp, labelwidth=18bp, labelsep=0pt, align=left}
+\setlist[itemize,3]{label=*} % Liberation has no centred asterisk
+
+% ── Pages keep their natural spacing (Word never stretches it to fill a page).
+\raggedbottom
+
+% ── Figures: keep them where written (no floating), captioned below ─────────
+\captionsetup{font={small,it}, labelformat=empty, skip=5pt}
+\let\origfigure\figure
+\let\endorigfigure\endfigure
+\renewenvironment{figure}[1][H]{\origfigure[H]\centering}{\endorigfigure}
+
+% ── Charts / tables: every generated chart and filtered table is wrapped in
+% `center`; give them breathing room from the surrounding text.
+% Rigid space either side (no stretch/shrink, like Word's), and a fixed
+% \parskip, so `--docx` output can reproduce the gaps exactly.
+\renewenvironment{center}{\par\vspace{8pt}\centering}{\par\vspace{8pt}}
+\AtBeginDocument{\setlength{\parskip}{0.5\baselineskip}}
+
+% ── Tables: styled tables come from the lua filter ──────────────────────────
+\setlength{\LTpost}{0pt}
+\renewcommand{\arraystretch}{1.2}
+\SetTblrInner{rowsep=2.6pt, colsep=6pt}
+
+% ── Vulnerability finding panel ─────────────────────────────────────────────
+\newtcolorbox{vulnbox}[1]{
+  enhanced, breakable, colframe=#1, colback=#1!5!white,
+  arc=2pt, boxrule=1pt, leftrule=4pt,
+  left=10pt, right=10pt, top=8pt, bottom=8pt,
+  before skip=4pt, after skip=12pt,
+}
+% Severity chip: filled colored badge with white text.
+\newcommand{\sevchip}[2]{{\setlength{\fboxsep}{3pt}\colorbox{#1}{\textcolor{white}{\bfseries\strut\,#2\,}}}}
+\newcommand{\metalabel}[1]{{\footnotesize\bfseries\color{colorMute}\MakeUppercase{#1}}}
+
+% ── Code / syntax highlighting (pandoc skylighting macros) ──────────────────
+\usepackage{fvextra}
+% breaknonspaceingroup lets breakanywhere split inside highlighted tokens
+% (\NormalTok{...}); without it a long token overflows the margin (#69).
+\fvset{breaklines=true, breakanywhere=true, breaknonspaceingroup=true,
+  breaksymbolleft={\normalfont\tiny\textrightarrow}, breakanywheresymbolpre={},
+  formatcom={\exhyphenpenalty=50\relax}} % code: break at a space before mid-token
+% Plain/indented code blocks are LaTeX `verbatim`, which never wraps; make
+% them fvextra Verbatim so the \fvset above applies to them too.
+\RecustomVerbatimEnvironment{verbatim}{Verbatim}{}
+\usepackage{framed}
+\definecolor{codebg}{HTML}{F5F7FA}
+\definecolor{codeframe}{HTML}{DEE3EA}
+\providecommand{\passthrough}[1]{#1}
+\setlength{\emergencystretch}{3em} % let lines loosen instead of overflowing (#64)
+% Break lines like Word does for `--docx`: spaces never shrink below their
+% natural width (WordSpace above) and words aren't auto-hyphenated.
+\hyphenpenalty=10000
+\exhyphenpenalty=0 \doublehyphendemerits=0 \finalhyphendemerits=0 % breaks after '-' cost nothing extra, as in Word
+\frenchspacing % one space width everywhere, as Word justifies (no wider gap after a period)
+$highlighting-macros$
+\makeatletter
+\@ifundefined{Shaded}{}{%
+  \renewenvironment{Shaded}{%
+    \begin{tcolorbox}[breakable, colback=codebg, colframe=codeframe,
+      boxrule=0.6pt, arc=2pt, left=8pt, right=8pt, top=6pt, bottom=6pt,
+      before skip=6pt, after skip=8pt, fontupper=\fontsize{9.8pt}{12pt}\selectfont]%
+  }{\end{tcolorbox}}%
+}
+\makeatother
+
+% ── Draft watermark ─────────────────────────────────────────────────────────
+$if(draft)$
+\usepackage{draftwatermark}
+\SetWatermarkText{DRAFT}
+% Half draftwatermark's 5cm default, twice the scale: at 5cm the body font's
+% 1000x WordSpace stretch overflows \maxdimen ("Dimension too large").
+\SetWatermarkFontSize{2.5cm}
+\SetWatermarkScale{6}
+\SetWatermarkColor[gray]{0.9}
+$endif$
+
+% ── Pandoc required macros ───────────────────────────────────────────────────
+\providecommand{\tightlist}{\setlength{\itemsep}{2pt}\setlength{\parskip}{0pt}}
+\makeatletter
+\newsavebox\pandoc@box
+\newcommand*\pandocbounded[1]{%
+  \sbox\pandoc@box{#1}%
+  \Gscale@div\@tempa{\textheight}{\dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
+  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
+  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi%
+  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\pandoc@box}%
+  \else\usebox{\pandoc@box}\fi%
+}
+\makeatother
+
+% ── Per-report extensibility ─────────────────────────────────────────────────
+$for(header-includes)$
+$header-includes$
+$endfor$
+
+% ═══════════════════════════════════════════════════════════════════════════
+\begin{document}
+
+% ── Cover Page ───────────────────────────────────────────────────────────────
+\begin{titlepage}
+\thispagestyle{empty}
+\begin{tikzpicture}[remember picture, overlay]
+  % Top brand band with a magenta rule beneath it
+  \fill[colorPrimary] (current page.north west) rectangle ([yshift=-4.2cm]current page.north east);
+  \fill[colorAccent]  ([yshift=-4.2cm]current page.north west) rectangle ([yshift=-4.35cm]current page.north east);
+  % Bottom band
+  \fill[colorPrimary] (current page.south west) rectangle ([yshift=1.6cm]current page.south east);
+  % Brand content, vertically centered in the band
+  \node[anchor=west] at ([xshift=1.9cm,yshift=-2.1cm]current page.north west) {%
+    $if(company_logo_light)$\includegraphics[height=1.5cm]{$company_logo_light$}$else${\headingfont\color{white}\Large\bfseries \rrFirm}$endif$};
+  \node[anchor=east, align=right, text=white!85, font=\footnotesize] at ([xshift=-1.9cm,yshift=-2.1cm]current page.north east) {\rrFirm\\ Offensive Security Services};
+\end{tikzpicture}
+
+\vspace*{3.6cm}
+
+\begin{center}
+  {\footnotesize\bfseries\color{colorAccent}\MakeUppercase{$if(engagement_type)$$engagement_type$$else$Penetration Test$endif$}}\\[0.5cm]
+  {\color{colorPrimary}\rule{0.9\linewidth}{1.4pt}}\\[0.5cm]
+  {\headingfont\Huge\bfseries\color{colorPrimary} $title$}\\[0.35cm]
+  $if(subtitle)${\Large\color{colorMute} $subtitle$}\\[0.35cm]$endif$
+  {\color{colorPrimary}\rule{0.9\linewidth}{1.4pt}}\\[1.4cm]
+
+  {\footnotesize\color{colorMute}PREPARED BY}\\[0.35cm]
+  $if(company_logo)$\includegraphics[height=1.6cm]{$company_logo$}$else$$if(logo.path)$\includegraphics[height=1.6cm]{$logo.path$}$else${\LARGE\bfseries\color{colorInk} \rrFirm}$endif$$endif$\\[1cm]
+
+  $if(client)${\footnotesize\color{colorMute}PREPARED FOR}\\[0.25cm]
+  {\Large\bfseries\color{colorInk} $client$}\\[1cm]$endif$
+
+  {\setlength{\fboxsep}{7pt}\colorbox{colorAccent}{\color{white}\bfseries\;\MakeUppercase{\rrClassification}\;}}
+\end{center}
+
+\vfill
+
+\noindent{\footnotesize\color{colorMute}
+  \textbf{Version:}~$if(version)$$version$$else$1.0$endif$\\
+  \textbf{Date:}~\today}
+\vspace{1.4cm}
+\end{titlepage}
+
+% ── Confidentiality / Document Control ───────────────────────────────────────
+\newgeometry{top=2.2cm, bottom=2.2cm, left=1.9cm, right=1.9cm}
+
+{\headingfont\bfseries\color{colorInk}\large Confidentiality Notice}\par
+\vspace{4pt}
+This report contains sensitive and confidential information belonging to $if(client)$$client$$else$the client$endif$. It is intended solely for the use of the client and its authorized personnel.
+
+\vspace{0.7cm}
+{\headingfont\bfseries\color{colorInk}\large Disclaimer}\par
+\vspace{4pt}
+The report's results and recommendations reflect the state of the systems and environment at the time of testing and may not account for any changes made after the assessment period. \rrFirm{} does not guarantee that the findings represent all potential security issues or that implementing the recommended actions will eliminate all risks.
+
+\vspace{0.7cm}
+{\headingfont\bfseries\color{colorInk}\large Document Control Details}\par
+\vspace{4pt}
+\noindent\begin{tblr}{
+  colspec={Q[l,font=\bfseries\color{colorInk}] Q[l]}, rowsep=2.6pt, colsep=5pt,
+}
+Classification: & $if(confidentiality)$$confidentiality$$else$Confidential$endif$ \\
+$if(client)$Authorized Recipient: & $client$ \\$endif$
+Prepared By: & \rrFirm \\
+Date Submitted: & \today \\
+$if(contact_name)$Point of Contact: & $contact_name$$if(contact_email)$ \textless{}$contact_email$\textgreater{}$endif$ \\$endif$
+$if(contact_phone)$Contact Information: & $contact_phone$ \\$endif$
+$if(report_id)$Report ID: & \mbox{$report_id$} \\$endif$
+$if(start_date)$Testing Window: & $start_date$$if(end_date)$ – $end_date$$endif$ \\$endif$
+Version: & $if(version)$$version$$else$1.0$endif$ \\
+\end{tblr}
+
+$if(authors)$
+\vspace{0.7cm}
+{\headingfont\bfseries\color{colorInk}\large Assessment Team}\par
+\vspace{4pt}
+\noindent\begin{tblr}{
+  colspec={Q[l] Q[l]}, row{1}={bg=colorPrimary, fg=white, font=\bfseries},
+  hlines={colorPrimary!30}, vlines={colorPrimary!30}, width=\linewidth, rowsep=3pt,
+}
+Name & Role \\
+$for(authors)$
+$authors.name$ & $authors.role$ \\
+$endfor$
+\end{tblr}
+$endif$
+
+\restoregeometry
+\clearpage
+
+% ── Table of Contents (hyperlinked) ──────────────────────────────────────────
+{\hypersetup{linkcolor=colorPrimary}
+\renewcommand{\contentsname}{{\headingfont\color{colorPrimary}Contents}}
+\tableofcontents}
+\clearpage
+
+% ── Report Body ──────────────────────────────────────────────────────────────
+$body$
+
+\end{document}

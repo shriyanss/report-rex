@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+*.whl
+
+# Build output
+*.pdf
+output/
+.build/
+ci-output/
+
+# LaTeX compiler artifacts (NOT .tex source files)
+*.aux
+*.log
+*.toc
+*.out
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.bbl
+*.blg
+
+# Docs
+docs/node_modules/
+docs/.docusaurus/
+docs/build/
+
+# VS Code extension (cli/editors/vscode)
+cli/editors/vscode/node_modules/
+cli/editors/vscode/out/
+cli/editors/vscode/*.vsix
+cli/editors/vscode/.vscode-test/
+
+# Docker
+.docker/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Python test artifacts
+.coverage
+core/coverage.xml

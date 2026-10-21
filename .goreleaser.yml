@@ -1,0 +1,72 @@
+version: 2
+project_name: report-rex
+
+before:
+  hooks:
+    - bash cli/scripts/prepare-embed.sh
+
+builds:
+  - id: rex
+    dir: cli
+    main: .
+    binary: rex
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      # Issue #7 only requires macOS arm64 (not amd64) alongside both Linux and
+      # Windows architectures — 5 binaries total.
+      - goos: darwin
+        goarch: amd64
+    ldflags:
+      - -s -w -X github.com/shriyanss/report-rex/cli/internal/version.Version={{.Version}}
+
+  - id: rex-svr
+    dir: cli
+    main: ./cmd/server
+    binary: rex-svr
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: darwin
+        goarch: amd64
+    ldflags:
+      - -s -w -X github.com/shriyanss/report-rex/cli/internal/version.Version={{.Version}}
+
+archives:
+  # No `builds:` filter, so this single archive entry bundles every
+  # `builds:` id above (rex + rex-svr) for each matching
+  # os/arch into one tarball/zip -- users download one asset and get both
+  # binaries, rather than doubling the release asset count.
+  - id: default
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+
+checksum:
+  name_template: "checksums.txt"
+
+release:
+  github:
+    owner: shriyanss
+    name: report-rex
+  name_template: "v{{ .Version }}"
+
+changelog:
+  disable: true

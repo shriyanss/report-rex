@@ -1,0 +1,7 @@
+name: "rit-cptc"
+display_name: "RIT CPTC"
+version: "0.1.0"
+type: "full-report"
+description: "Bold pentest report: royal-blue cover with mint title, magenta confidentiality banners, corner accents, and severity finding panels with a colored label sidebar (Risk/Impact/Sophistication, Material Impact, MITRE ATT&CK)."
+engine: "xelatex"
+pandoc_version: ">=3.0"

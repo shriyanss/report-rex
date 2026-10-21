@@ -1,0 +1,144 @@
+%% Report Rex — Quick Communication Template
+%% Lightweight one/two-pager for mid-engagement client communications.
+%% Engine: XeLaTeX
+
+\documentclass[11pt, a4paper]{article}
+
+\usepackage{geometry}
+\geometry{a4paper, top=2cm, bottom=2cm, left=2.4cm, right=2.4cm, headheight=1.4cm, footskip=1cm}
+
+\usepackage{fontspec}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{fancyhdr}
+\usepackage{parskip}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{calc}
+\usepackage{tcolorbox}
+\usepackage{microtype}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{tabularray}
+\UseTblrLibrary{booktabs}
+\usepackage{hyperref}
+\tcbuselibrary{skins, breakable}
+
+$if(mainfont)$
+\setmainfont{$mainfont$}
+$else$
+\setmainfont{TeX Gyre Heros}[Scale=0.92]
+$endif$
+$if(monofont)$
+\setmonofont{$monofont$}[Scale=MatchLowercase]
+$else$
+\setmonofont{TeX Gyre Cursor}[Scale=0.85]
+$endif$
+
+\definecolor{colorPrimary}{HTML}{$if(colors.primary)$$colors.primary$$else$1A1A2E$endif$}
+\definecolor{colorAccent}{HTML}{$if(colors.accent)$$colors.accent$$else$0F3460$endif$}
+\definecolor{colorCritical}{HTML}{$if(colors.critical)$$colors.critical$$else$B71C1C$endif$}
+\definecolor{colorHigh}{HTML}{$if(colors.high)$$colors.high$$else$E65100$endif$}
+\definecolor{colorMedium}{HTML}{$if(colors.medium)$$colors.medium$$else$F9A825$endif$}
+\definecolor{colorLow}{HTML}{$if(colors.low)$$colors.low$$else$1565C0$endif$}
+\definecolor{colorInfo}{HTML}{$if(colors.info)$$colors.info$$else$546E7A$endif$}
+\definecolor{colorMute}{HTML}{6B7280}
+
+\hypersetup{colorlinks=true, linkcolor=colorAccent, urlcolor=colorAccent, breaklinks=true,
+  pdfcreator={$generator$}, pdfproducer={$generator$}}
+
+% Quick communications read better without section numbers.
+\setcounter{secnumdepth}{0}
+
+\newcommand{\rrFirm}{$if(company)$$company$$else$Report Rex$endif$}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[L]{\small\color{colorMute}\rrFirm}
+\fancyfoot[C]{\small\color{colorMute}Page \thepage}
+\fancyfoot[R]{\small\color{colorMute}$if(client)$$client$$endif$}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+\providecommand{\tightlist}{\setlength{\itemsep}{2pt}\setlength{\parskip}{0pt}}
+\providecommand{\passthrough}[1]{#1}
+\setlength{\emergencystretch}{3em} % let lines loosen instead of overflowing (#64)
+
+% Figures: no floating
+\captionsetup{font=small, labelfont={bf,color=colorAccent}, skip=6pt}
+\let\origfigure\figure\let\endorigfigure\endfigure
+\renewenvironment{figure}[1][H]{\origfigure[H]\centering}{\endorigfigure}
+
+\SetTblrInner{rowsep=2.4pt, colsep=6pt}
+
+% Vulnerability panel (title is carried inline for this template)
+\newtcolorbox{vulnbox}[1]{
+  enhanced, breakable, colframe=#1, colback=#1!6!white,
+  arc=2pt, boxrule=1pt, leftrule=4pt, left=10pt, right=10pt, top=8pt, bottom=8pt,
+}
+\newcommand{\sevchip}[2]{{\colorbox{#1}{\textcolor{white}{\bfseries\strut\,#2\,}}}}
+\newcommand{\metalabel}[1]{{\footnotesize\bfseries\color{colorMute}\MakeUppercase{#1}}}
+
+% Code / syntax highlighting
+\usepackage{fvextra}
+% breaknonspaceingroup lets breakanywhere split inside highlighted tokens
+% (\NormalTok{...}); without it a long token overflows the margin (#69).
+\fvset{breaklines=true, breakanywhere=true, breaknonspaceingroup=true}
+% Plain/indented code blocks are LaTeX `verbatim`, which never wraps; make
+% them fvextra Verbatim so the \fvset above applies to them too.
+\RecustomVerbatimEnvironment{verbatim}{Verbatim}{}
+\usepackage{framed}
+\definecolor{codebg}{HTML}{F6F8FA}
+\definecolor{codeframe}{HTML}{E1E4E8}
+$highlighting-macros$
+\makeatletter
+\@ifundefined{Shaded}{}{%
+  \renewenvironment{Shaded}{%
+    \begin{tcolorbox}[breakable, colback=codebg, colframe=codeframe, boxrule=0.6pt,
+      arc=2pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fontupper=\small]%
+  }{\end{tcolorbox}}%
+}
+\makeatother
+
+\makeatletter
+\newsavebox\pandoc@box
+\newcommand*\pandocbounded[1]{%
+  \sbox\pandoc@box{#1}%
+  \Gscale@div\@tempa{\textheight}{\dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
+  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
+  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi%
+  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\pandoc@box}%
+  \else\usebox{\pandoc@box}\fi%
+}
+\makeatother
+
+$for(header-includes)$
+$header-includes$
+$endfor$
+
+% ═══════════════════════════════════════════════════════════════════════════
+\begin{document}
+
+% Masthead: firm logo (left) and client logo (right)
+\noindent\begin{minipage}[c]{0.5\linewidth}
+  $if(company_logo)$\includegraphics[height=1cm]{$company_logo$}$else$\textbf{\large\color{colorPrimary}\rrFirm}$endif$
+\end{minipage}\hfill
+\begin{minipage}[c]{0.45\linewidth}\raggedleft
+  $if(client_logo)$\includegraphics[height=1cm]{$client_logo$}$else$\textbf{\color{colorMute}$if(client)$$client$$endif$}$endif$
+\end{minipage}
+
+\vspace{6pt}
+{\color{colorAccent}\rule{\linewidth}{1pt}}\\[2pt]
+{\LARGE\bfseries\color{colorPrimary} $title$}\\[3pt]
+{\small\color{colorMute}%
+  $if(client)$$client$ \textbullet\ $endif$%
+  $if(date)$$date$$else$\today$endif$%
+  $if(confidentiality)$ \textbullet\ $confidentiality$$endif$}\\[2pt]
+{\color{colorAccent}\rule{\linewidth}{1pt}}
+
+\vspace{10pt}
+
+$body$
+
+\end{document}
